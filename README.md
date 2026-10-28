@@ -18,4 +18,4 @@ You pick up small colorful cubes (*pixels*) and deliver them to houses of same c
 - `R`*(on the win/game over screen)*: Reset, play again
 
 ## Screenshot
-![https://github.com/KarelCerny404/PixelCourier/blob/e8510b049b089b51150baff0f7dc61698ff38726/assets/screenshot.png](Screenshot)
+![https://raw.githubusercontent.com/KarelCerny404/PixelCourier/refs/heads/master/assets/screenshot.png](Screenshot)
