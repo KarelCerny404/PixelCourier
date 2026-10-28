@@ -8,6 +8,8 @@ class Sprite:
         self.vel_x = 0
         self.vel_y = 0
 
+        self.scaling = 0
+
         self.surface = pygame.Surface((width, height))
         self.surface.fill(color)
 
@@ -38,6 +40,15 @@ class Sprite:
     def move(self, dt=1):
         self.rect.x += self.vel_x * dt
         self.rect.y += self.vel_y * dt
+
+    def scale(self, scaling=0):
+        if self.rect.width > 2 and scaling < 0:
+            self.rect.width += scaling
+            self.rect.height += scaling
+        elif self.rect.width < 49 and scaling > 0:
+            self.rect.width += scaling
+            self.rect.height += scaling
+        self.surface = pygame.transform.scale(self.surface, (self.rect.width, self.rect.height))
 
     def clamp_to_window(self, win_width, win_height):
         if self.rect.left < 0:
@@ -144,11 +155,17 @@ while True:
                 player.vel_y = -0.2
             if event.key == pygame.K_DOWN:
                 player.vel_y = 0.2
+            if event.key == pygame.K_n:
+                player.scaling = 1
+            if event.key == pygame.K_m:
+                player.scaling = -1
         elif event.type == pygame.KEYUP:
             if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
                 player.vel_x = 0
             if event.key in (pygame.K_UP, pygame.K_DOWN):
                 player.vel_y = 0
+            if event.key in (pygame.K_n, pygame.K_m):
+                player.scaling = 0
 
     window.fill((255, 255, 255))
 
@@ -179,6 +196,7 @@ while True:
             scoreText = font.render("Score: " + str(score), True, (0, 0, 0), (255, 255, 255))
             inventory[i] = False
 
+    player.scale(player.scaling)
     player.move(20)
     player.clamp_to_window(window.width, window.height)
 
