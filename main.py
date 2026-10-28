@@ -135,10 +135,13 @@ inventory = [
     False
 ]
 
-font = pygame.font.Font(None, 36)
+font1 = pygame.font.Font(None, 36)
+font2 = pygame.font.Font(None, 72)
 
-scoreText = font.render("", True, (0, 0, 0), (255, 255, 255))
+scoreText = font1.render("", True, (0, 0, 0), (255, 255, 255))
+
 score = 0
+screen = -1
 
 clock = pygame.time.Clock()
 while True:
@@ -159,6 +162,24 @@ while True:
                 player.scaling = 1
             if event.key == pygame.K_m:
                 player.scaling = -1
+            if event.key == pygame.K_s:
+                screen = 1
+            if event.key == pygame.K_r:
+                if screen == 1:
+                    screen = 0
+                    score = 0
+                    walls = [
+                        wall(4, 260)
+                    ]
+                    scoreText = font1.render("Score: " + str(score), True, (0, 0, 0), (255, 255, 255))
+                    inventory = [
+                        False,
+                        False,
+                        False
+                    ]
+                    player.rect.x = 5
+                    player.rect.y = 40
+
         elif event.type == pygame.KEYUP:
             if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
                 player.vel_x = 0
@@ -193,7 +214,7 @@ while True:
                 walls.append(wall(4, 260))
             else:
                 walls.append(wall(460, 4))
-            scoreText = font.render("Score: " + str(score), True, (0, 0, 0), (255, 255, 255))
+            scoreText = font1.render("Score: " + str(score), True, (0, 0, 0), (255, 255, 255))
             inventory[i] = False
 
     player.scale(player.scaling)
@@ -208,12 +229,28 @@ while True:
     for i in pixels:
         i.draw(window)
 
-
-
     for i in walls:
         i.draw(window)
 
     window.blit(scoreText, (5, 5))
+
+    if screen == 1:
+        if score >= 25:
+            window.fill((0, 255, 0))
+            text = f"You won ({score})"
+            color = (0, 0, 0)
+            bg = (0, 255, 0)
+        else:
+            window.fill((255, 255, 255))
+            text = f"Game over ({score})"
+            color = (0, 0, 0)
+            bg = (255, 255, 255)
+
+        surrenderText_surf = font2.render(text, True, color, bg)
+        surrenderText_rect = surrenderText_surf.get_rect()
+        surrenderText_rect.center = (window.get_width() // 2, window.get_height() // 2)
+
+        window.blit(surrenderText_surf, surrenderText_rect)
 
     pygame.display.flip()
     clock.tick(60)
