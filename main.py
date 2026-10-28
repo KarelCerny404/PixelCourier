@@ -1,11 +1,98 @@
 import pygame
 import random
 
-def collision_detection(objectA_x, objectA_y, objectB_x, objectB_y, objectA_width, objectA_height, objectB_width, objectB_height):
-    return (objectA_x <= (objectB_x + int(objectB_width)) and
-            (objectA_x + objectA_width) >= objectB_x and
-             objectA_y <= (objectB_y + objectB_height) and
-            (objectA_y + objectA_height) >= objectB_y)
+class Sprite:
+    def __init__(self, x, y, width, height, *, color=(0, 0, 0)):
+        self.rect = pygame.Rect(x, y, width, height)
+
+        self.vel_x = 0
+        self.vel_y = 0
+
+        self.surface = pygame.Surface((width, height))
+        self.surface.fill(color)
+
+        @property
+        def x(self):
+            return self.rect.x
+
+        @x.setter
+        def x(self, value):
+            self.rect.x = value
+
+        @property
+        def y(self):
+            return self.rect.y
+
+        @y.setter
+        def y(self, value):
+            self.rect.y = value
+
+        @property
+        def width(self):
+            return self.rect.width
+
+        @property
+        def height(self):
+            return self.rect.height
+
+    def move(self, dt=1):
+        self.rect.x += self.vel_x * dt
+        self.rect.y += self.vel_y * dt
+
+    def clamp_to_window(self, win_width, win_height):
+        if self.rect.left < 0:
+            self.rect.left = 0
+        if self.rect.right > win_width:
+            self.rect.right = win_width
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > win_height:
+            self.rect.bottom = win_height
+
+    def collides_with(self, other_sprite):
+        return self.rect.colliderect(other_sprite.rect)
+
+    def draw(self, surface):
+        surface.blit(self.surface, self.rect.topleft)
+
+class Wall(Sprite):
+    def __init__(self, x, y, w, h, color=(0, 0, 255), min_margin=100):
+        super().__init__(x, y, w, h, color=color)
+        self.min_margin = min_margin
+        self.w = w
+        self.h = h
+
+    def reset(self):
+        self.rect.x = random.randint(self.min_margin, window.width - self.min_margin - self.w)
+        self.rect.y = random.randint(self.min_margin, window.height - self.min_margin - self.h)
+
+class Pixel(Sprite):
+    def __init__(self, x, y, w, h, color=(255, 255, 255), min_margin=50):
+        super().__init__(x, y, w, h, color=color)
+        self.min_margin = min_margin
+        self.w = w
+        self.h = h
+
+    def reset(self):
+        self.rect.x = random.randint(self.min_margin, window.width - self.min_margin - self.w)
+        self.rect.y = random.randint(self.min_margin, window.height - self.min_margin - self.h)
+
+class House(Sprite):
+    def __init__(self, x, y, w, h, color=(255, 255, 255)):
+        super().__init__(x, y, w, h, color=color)
+
+def wall(width=4, height=4, min_margin=170):
+    x = random.randint(min_margin, window.width - min_margin - width)
+    y = random.randint(min_margin, window.height - min_margin - height)
+    return Wall(x, y, width, height, color=(0, 0, 255))
+
+def pixel(width=10, height=10, min_margin=50, color=(255, 255, 255)):
+    x = random.randint(min_margin, window.width - min_margin - width)
+    y = random.randint(min_margin, window.height - min_margin - height)
+    return Pixel(x, y, width, height, color=color)
+
+def house(x=0, y=0, width=60, height=60, color=(255, 255, 255)):
+    return House(x, y, width, height, color=color)
 
 pygame.init()
 
@@ -13,41 +100,36 @@ window = pygame.display.set_mode((800, 600))
 window.fill((0, 0, 0))
 pygame.display.set_caption("Pixel Courier")
 
-player = pygame.surface.Surface((50, 50))
-player.fill((0, 0, 0))
+player = Sprite(5, int(window.height / 2 - 25), 50, 50)
 
-player_x = 5
-player_y = window.height / 2 - player.height / 2
-player_vel_x = 0
-player_vel_y = 0
+pixels = [
+    pixel(color=(255, 0, 0)),
+    pixel(color=(0, 255, 0)),
+    pixel(color=(0, 0, 255))
+]
 
-package = pygame.surface.Surface((10, 10))
-package.fill((255, 0, 0))
+houses = [
+    house(window.width - 65, 5, color=(255, 0, 0)),
+    house(5, window.height - 65, 100, color=(0, 255, 0)),
+    house(window.width - 65, window.height - 125, height=120, color=(0, 0, 255))
+]
 
-package_x = random.randint(50, window.width - 50)
-package_y = random.randint(50, window.height - 50)
+walls = [
+    wall(4, 260)
+]
 
-redHouse = pygame.surface.Surface((60,60))
-redHouse.fill((255, 255, 255))
-
-redHouse_x = window.width - 70
-redHouse_y = 10
-
-wallA = pygame.surface.Surface((4, 160))
-wallA.fill((0, 0, 255))
-wallA_x = random.randint(100, window.width - 100)
-wallA_y = random.randint(100, window.height - 100)
-
-wallB = pygame.surface.Surface((160, 4))
-wallB.fill((0, 0, 255))
-wallB_x = random.randint(100, window.width - 100)
-wallB_y = random.randint(100, window.height - 100)
+inventory = [
+    False,
+    False,
+    False
+]
 
 font = pygame.font.Font(None, 36)
 
 scoreText = font.render("", True, (0, 0, 0), (255, 255, 255))
 score = 0
 
+clock = pygame.time.Clock()
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -55,61 +137,65 @@ while True:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                player_vel_x = -0.2
+                player.vel_x = -0.2
             if event.key == pygame.K_RIGHT:
-                player_vel_x = 0.2
+                player.vel_x = 0.2
             if event.key == pygame.K_UP:
-                player_vel_y = -0.2
+                player.vel_y = -0.2
             if event.key == pygame.K_DOWN:
-                player_vel_y = 0.2
-        else:
-            player_vel_x = 0
-            player_vel_y = 0
+                player.vel_y = 0.2
+        elif event.type == pygame.KEYUP:
+            if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                player.vel_x = 0
+            if event.key in (pygame.K_UP, pygame.K_DOWN):
+                player.vel_y = 0
 
     window.fill((255, 255, 255))
 
-    if collision_detection(player_x, player_y, wallA_x, wallA_y, player.width, player.height, wallA.width, wallA.height) or collision_detection(player_x, player_y, wallB_x, wallB_y, player.width, player.height, wallB.width, wallB.height):
-        if player_vel_x > 0:
-            player_vel_x = -0.2
-        elif player_vel_x < 0:
-            player_vel_x = 0.2
+    for i in range(len(pixels)):
+        if player.collides_with(pixels[i]):
+            inventory[i] = True
 
-        if player_vel_y > 0:
-            player_vel_y = -0.2
-        elif player_vel_y < 0:
-            player_vel_y = 0.2
+    for i in walls:
+        if player.collides_with(i):
+            player.rect.x = 5
+            player.rect.y = 40
 
-    if player_x + player_vel_x >= 0 and player_x + player_vel_x + player.width <= window.width + 1:
-        player_x += player_vel_x
+    for i in range(len(inventory)):
+        if inventory[i] == True:
+            pixels[i].rect.x = player.rect.x + 5 + i*15
+            pixels[i].rect.y = player.rect.y + 5
 
-    if player_y + player_vel_y >= 0 and player_y + player_vel_y + player.height <= window.height + 1:
-        player_y += player_vel_y
+    for i in range(len(houses)):
+        if player.collides_with(houses[i]) and inventory[i] == True:
+            pixels[i].reset()
+            for j in walls:
+                j.reset()
+            score += 1
+            if random.randint(0, 1) == 0:
+                walls.append(wall(4, 260))
+            else:
+                walls.append(wall(460, 4))
+            scoreText = font.render("Score: " + str(score), True, (0, 0, 0), (255, 255, 255))
+            inventory[i] = False
 
-    if collision_detection(player_x, player_y, package_x, package_y, player.width, player.height, package.width, package.height):
-        package_x = player_x + 5
-        package_y = player_y + 5
-        redHouse.fill((255, 0, 0))
-        first = True
+    player.move(20)
+    player.clamp_to_window(window.width, window.height)
 
-    if collision_detection(player_x, player_y, redHouse_x, redHouse_y, player.width, player.height, redHouse.width, redHouse.height) and first:
-        package_x = random.randint(50, window.width - 50)
-        package_y = random.randint(50, window.height - 50)
-        redHouse.fill((255, 255, 255))
-        wallA_x = random.randint(100, window.width - 100)
-        wallA_y = random.randint(100, window.height - 100)
-        wallB_x = random.randint(100, window.width - 100)
-        wallB_x = random.randint(100, window.height - 100)
-        score += 1
-        scoreText = font.render("Score: " + str(score), True, (255, 255, 255), (0, 0, 0))
-        first = False
+    for i in houses:
+        i.draw(window)
+
+    window.blit(player.surface, player.rect)
+
+    for i in pixels:
+        i.draw(window)
 
 
-    window.blit(redHouse, ((redHouse_x, redHouse_y)))
-    window.blit(player, (player_x, player_y))
-    window.blit(package, (package_x, package_y))
-    window.blit(wallA, (wallA_x, wallA_y))
-    window.blit(wallB, (wallB_x, wallB_y))
+
+    for i in walls:
+        i.draw(window)
+
     window.blit(scoreText, (5, 5))
-    
 
     pygame.display.flip()
+    clock.tick(60)
